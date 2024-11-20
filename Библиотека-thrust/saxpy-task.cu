@@ -14,7 +14,7 @@ void usage(const char* filename)
 	printf("Usage: %s <n>\n", filename);
 }
 
-using namespace thrust;
+// using namespace thrust;
 //using namespace thrust::placeholders;
 
 // TODO: Please refer to sorting examples:
@@ -27,6 +27,11 @@ struct saxpy
 	// Constructor:
 	saxpy(float a): a(a) {}
 	// TODO: Define operator ()
+	__host__ __device__
+	float operator()(float x, float y)
+	{
+		return a * x + y;
+	}
 
 };
 
@@ -47,9 +52,11 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 	cudaSetDevice(2);
-	// TODO: Generate 3 vectors on host ( z = a * x + y)
 
-	
+	// TODO: Generate 3 vectors on host ( z = a * x + y)
+	thrust::host_vector<float> X(n), Y(n), Z(n);
+	thrust::generate(X.begin(), X.end(), rand);
+	thrust::generate(Y.begin(), Y.end(), rand);
 
 	// Print out the input data if n is small.
 	if (n <= printable_n)
@@ -61,14 +68,19 @@ int main(int argc, char* argv[])
 	}
 
 	// TODO: Transfer data to the device.
+	thrust::device_vector<float> X_d = X;
+	thrust::device_vector<float> Y_d = Y;
+	thrust::device_vector<float> Z_d = Z;
 
 	float a=2.5f;
 	// TODO: Use transform to make an saxpy operation
 	// Note: you may use placeholders
-
+	thrust::transform(X_d.begin(), X_d.end(), Y_d.begin(), Z_d.begin(), saxpy(a));
 
 	// TODO: Transfer data back to host.
-
+	thrust::copy(X_d.begin(), X_d.end(), X.begin());
+	thrust::copy(Y_d.begin(), Y_d.end(), Y.begin());
+	thrust::copy(Z_d.begin(), Z_d.end(), Z.begin());
 
 	// Print out the output data if n is small.
 	if (n <= printable_n)
